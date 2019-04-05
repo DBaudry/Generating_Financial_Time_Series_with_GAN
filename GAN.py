@@ -26,7 +26,7 @@ class Generator(nn.Module):
         # Transform list into layers using nn.ModuleList
         self.hidden_layers = nn.ModuleList(self.hidden_layers)
         # Output layer
-        self.fc2 = nn.Linear(WDTH, window)  ######## Change 2 by window
+        self.fc2 = nn.Linear(WDTH, window)
 
     def __call__(self, z):
         h = F.relu(self.fc1(z))
@@ -44,7 +44,7 @@ class Discriminator(nn.Module):
     def __init__(self, window, WDTH=0, DPTH=0):
         super().__init__()
         # First layer
-        self.fc1 = nn.Linear(window, WDTH) ###### Change 2 by window
+        self.fc1 = nn.Linear(window, WDTH)
         # Hidden layers
         self.hidden_layers = []
         for _ in range(DPTH):
