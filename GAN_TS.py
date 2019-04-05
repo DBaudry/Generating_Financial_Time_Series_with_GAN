@@ -14,7 +14,7 @@ from utils import get_data, generate_batch
 # Define the generator
 class Generator(nn.Module):
     def __init__(self, input_layer, hidden_layers, output_layer,
-                DPTH=0, PRIOR_N=1, PRIOR_STD=1.):
+                DPTH=0, PRIOR_N=1, PRIOR_STD=1., is_conv=False):
         super().__init__()
         self.PRIOR_N = PRIOR_N
         self.PRIOR_STD = PRIOR_STD
@@ -24,15 +24,20 @@ class Generator(nn.Module):
             self.hidden_layers.append(hidden_layers)
         self.hidden_layers = nn.ModuleList(self.hidden_layers)
         self.L_out = output_layer
+        self.is_conv = is_conv
 
     def __call__(self, z):
         h = F.relu(self.L_in(z))
         for hidden_layer in self.hidden_layers:
             h = F.relu(hidden_layer(h))
+        if self.is_conv:
+            return self.L_out(h)[:, 0, :]
         return self.L_out(h)
 
     def generate(self, batchlen):
         z = torch.normal(torch.zeros(batchlen, self.PRIOR_N), self.PRIOR_STD)
+        if self.is_conv:
+            z = z.unsqueeze(1)
         return self.__call__(z)
 
 
@@ -53,7 +58,7 @@ class Discriminator(nn.Module):
         return self.L_out(h)
 
 
-def GAN(serie, window,
+def GAN(serie, window, is_conv_G,
         input_layer_G, hidden_layers_G, output_layer_G,
         input_layer_D, hidden_layers_D, output_layer_D,
         TRAIN_RATIO=10, N_ITER=4001, BATCHLEN=200,
@@ -77,7 +82,7 @@ def GAN(serie, window,
         from tqdm import tqdm_notebook as tqdm
     else:
         from tqdm import tqdm
-    G = Generator(DPTH=DPTH_G, PRIOR_N=PRIOR_N, PRIOR_STD=PRIOR_STD,
+    G = Generator(DPTH=DPTH_G, PRIOR_N=PRIOR_N, PRIOR_STD=PRIOR_STD, is_conv=is_conv_G,
                   input_layer=input_layer_G, hidden_layers=hidden_layers_G, output_layer=output_layer_G)
     solver_G = torch.optim.Adam(G.parameters(), lr=lr_G, betas=betas_G)
     D = Discriminator(DPTH=DPTH_D, input_layer=input_layer_D,
@@ -126,16 +131,70 @@ if __name__ == '__main__':
     param = {
         'serie': VIX,
         'window': 60,
+        'frame': 10000,
+        'is_notebook': False,
+        'batchlen_plot': 3
+    }
+    training_param = {
+        'N_ITER': 10001,
+        'TRAIN_RATIO': 10,
+        'BATCHLEN': 30,
+        # Random Noise used by the Generator
+        'PRIOR_N': 60,
+        'PRIOR_STD': 500.,
+        # Depth and Withdraw of Hidden Layers
+        'WDTH_G': 100,
+        'DPTH_G': 2,
+        'WDTH_D': 100,
+        'DPTH_D': 2,
+        # Adam Optimizer parameters for G/D
+        'lr_G': 1e-3,
+        'betas_G': (0.5, 0.9),
+        'lr_D': 1e-3,
+        'betas_D': (0.5, 0.9)
+    }
+
+    param.update(training_param)
+
+    layers = {
+        'is_conv_G': True,
+        # Generator Layers
+        'input_layer_G':  nn.Conv1d(1, 1, kernel_size=5, padding=2),
+        'hidden_layers_G': nn.Conv1d(1, 1, kernel_size=5, padding=2),
+        'output_layer_G': nn.Conv1d(1, 1, kernel_size=5, padding=2),
+        # 'input_layer_G': nn.Linear(param['PRIOR_N'], param['WDTH_G']),
+        # 'hidden_layers_G': nn.Linear(param['WDTH_G'], param['WDTH_G']),
+        # 'output_layers_G': nn.Linear(param['WDTH_G'], param['window']),
+        # Discriminator Layers
+        'input_layer_D':  nn.Linear(param['window'], param['WDTH_D']),
+        'hidden_layers_D': nn.Linear(param['WDTH_D'], param['WDTH_D']),
+        'output_layer_D': nn.Linear(param['WDTH_D'], 1)
+    }
+
+    param.update(layers)
+    GAN(**param)
+
+
+
+################ BONNES ARCHI ######################
+
+
+archi = False
+if archi:
+    param = {
+        'serie': VIX,
+        'window': 20,
         'frame': 100,
         'is_notebook': False,
         'batchlen_plot': 5
     }
+
     training_param = {
         'N_ITER': 2001,
         'TRAIN_RATIO': 10,
-        'BATCHLEN': 20,
+        'BATCHLEN': 30,
         # Random Noise used by the Generator
-        'PRIOR_N': 20,
+        'PRIOR_N': 60,
         'PRIOR_STD': 500.,
         # Depth and Withdraw of Hidden Layers
         'WDTH_G': 100,
@@ -152,26 +211,15 @@ if __name__ == '__main__':
     param.update(training_param)
 
     layers = {
+        'is_conv_G': True,
         # Generator Layers
-        'input_layer_G':  nn.Linear(param['PRIOR_N'], param['WDTH_G']),
+        'input_layer_G': nn.Linear(param['PRIOR_N'], param['WDTH_G']),
         'hidden_layers_G': nn.Linear(param['WDTH_G'], param['WDTH_G']),
-        'output_layer_G': nn.Linear(param['WDTH_G'], param['window']),
+        'output_layers_G': nn.Linear(param['WDTH_G'], param['window']),
         # Discriminator Layers
-        'input_layer_D':  nn.Linear(param['window'], param['WDTH_D']),
+        'input_layer_D': nn.Linear(param['window'], param['WDTH_D']),
         'hidden_layers_D': nn.Linear(param['WDTH_D'], param['WDTH_D']),
         'output_layer_D': nn.Linear(param['WDTH_D'], 1)
     }
 
     param.update(layers)
-    GAN(**param)
-
-
-
-################ BONNES ARCHI ######################
-
-# GAN(VIX, window=60, TRAIN_RATIO=10, N_ITER=2001, BATCHLEN=500,
-#     WDTH_G=100, DPTH_G=1, WDTH_D=100, DPTH_D=1,
-#     PRIOR_N=20, PRIOR_STD=500., frame=100, is_notebook=False, batchlen_plot=5,
-#     input_layer_G=nn.Linear, hidden_layers_G=nn.Linear, output_layer_G=nn.Linear,
-#     input_layer_D=nn.Linear, hidden_layers_D=nn.Linear, output_layer_D=nn.Linear,
-#     lr_G=1e-3, betas_G=(0.5, 0.9), lr_D=1e-3, betas_D=(0.5, 0.9))
