@@ -47,7 +47,7 @@ if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
         'window': 60,
-        'frame': 2000,
+        'frame': 200,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
@@ -57,14 +57,16 @@ if __name__ == '__main__':
         'N_ITER': 2001,
         'TRAIN_RATIO': 10,
         'BATCHLEN': 30,
+        # Depth and Withdraw of Hidden Layers
+        'generator_args': {
         # Random Noise used by the Generator
         'PRIOR_N': 20,
         'PRIOR_STD': 500.,
-        # Depth and Withdraw of Hidden Layers
-        'WDTH_G': 100,
-        'DPTH_G': 1,
-        'WDTH_D': 100,
-        'DPTH_D': 3,
+        'WDTH': 100,
+        'DPTH': 1},
+        'discriminator_args': {
+        'WDTH': 100,
+        'DPTH': 3},
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),

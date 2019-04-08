@@ -34,7 +34,7 @@ class Generator(nn.Module):
 
 # Define the discriminator.
 class Discriminator(nn.Module):
-    def __init__(self, window, WDTH=0, DPTH=0):
+    def __init__(self, window):
         super().__init__()
         self.main = nn.Sequential(
         nn.BatchNorm1d(1),  # I add this layer to normalize the real data inputs
@@ -73,13 +73,16 @@ if __name__ == '__main__':
         'TRAIN_RATIO': 10,
         'BATCHLEN': 30,
         # Random Noise used by the Generator
+        'generator_args': {
         'PRIOR_N': 5,
         'PRIOR_STD': 1.,
-        # Depth and Withdraw of Hidden Layers
-        'WDTH_G': 100,
-        'DPTH_G': 1,
-        'WDTH_D': 100,
-        'DPTH_D': 3,
+        'WDTH': 100,
+        'DPTH': 1,
+        'PRIOR_CHANNEL': 3,
+        'START': 60,
+        'NB_UPSCALE': 0,
+        },
+        'discriminator_args': {},
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),

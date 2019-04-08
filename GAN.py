@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 from utils import get_data, generate_batch
 
 
-def GAN(serie, window, Generator, Discriminator , TRAIN_RATIO=1, N_ITER=40001, BATCHLEN=128,
-        WDTH_G=0, DPTH_G=0, WDTH_D=0, DPTH_D=0,
-        PRIOR_N=1, PRIOR_STD=1., frame=1000, is_notebook=True, batchlen_plot=5,
+def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_args,
+        TRAIN_RATIO=10, N_ITER=40001, BATCHLEN=128,
+        frame=1000, is_notebook=True, batchlen_plot=5,
         lr_G=1e-3, betas_G=(0.5, 0.9), lr_D=1e-3, betas_D=(0.5, 0.9)):
     """
     serie: Input Financial Time Serie
@@ -33,9 +33,9 @@ def GAN(serie, window, Generator, Discriminator , TRAIN_RATIO=1, N_ITER=40001, B
         from tqdm import tqdm_notebook as tqdm
     else:
         from tqdm import tqdm
-    G = Generator(window, WDTH=WDTH_G, DPTH=DPTH_G, PRIOR_N=PRIOR_N, PRIOR_STD=PRIOR_STD)
+    G = Generator(window, **generator_args)
     solver_G = torch.optim.Adam(G.parameters(), lr=lr_G, betas=betas_G)
-    D = Discriminator(window, WDTH=WDTH_D, DPTH=DPTH_D)
+    D = Discriminator(window, **discriminator_args)
     solver_D = torch.optim.Adam(D.parameters(), lr=lr_D, betas=betas_D)
 
     for i in tqdm(range(N_ITER)):
