@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 if torch.cuda.is_available():
     loadmap = {'cuda:0': 'gpu'}
 else:
@@ -11,59 +12,10 @@ import matplotlib.pyplot as plt
 from utils import get_data, generate_batch
 
 
-# Define the generator
-class Generator(nn.Module):
-    def __init__(self, window, WDTH=0, PRIOR_N=1, DPTH=0, PRIOR_STD=1.):
-        super().__init__()
-        self.PRIOR_N = PRIOR_N
-        self.PRIOR_STD = PRIOR_STD
-        # First layer
-        self.fc1 = nn.Linear(PRIOR_N, WDTH)
-        # Hidden layers
-        self.hidden_layers = []
-        for _ in range(DPTH):
-            self.hidden_layers.append(nn.Linear(WDTH, WDTH))
-        # Transform list into layers using nn.ModuleList
-        self.hidden_layers = nn.ModuleList(self.hidden_layers)
-        # Output layer
-        self.fc2 = nn.Linear(WDTH, window)
-
-    def __call__(self, z):
-        h = F.relu(self.fc1(z))
-        for hidden_layer in self.hidden_layers:
-            h = F.relu(hidden_layer(h))
-        return self.fc2(h)
-
-    def generate(self, batchlen):
-        z = torch.normal(torch.zeros(batchlen, self.PRIOR_N), self.PRIOR_STD)
-        return self.__call__(z)
-
-
-# Define the discriminator.
-class Discriminator(nn.Module):
-    def __init__(self, window, WDTH=0, DPTH=0):
-        super().__init__()
-        # First layer
-        self.fc1 = nn.Linear(window, WDTH)
-        # Hidden layers
-        self.hidden_layers = []
-        for _ in range(DPTH):
-            self.hidden_layers.append(nn.Linear(WDTH, WDTH))
-        # Transform list into layers using nn.ModuleList
-        self.hidden_layers = nn.ModuleList(self.hidden_layers)
-        # Output layer
-        self.fc2 = nn.Linear(WDTH, 1)
-
-    def __call__(self, x):
-        h = F.relu(self.fc1(x))
-        for hidden_layer in self.hidden_layers:
-            h = F.relu(hidden_layer(h))
-        return self.fc2(h)
-
-
-def GAN(serie, window, TRAIN_RATIO=1, N_ITER=40001, BATCHLEN=128,
+def GAN(serie, window, Generator, Discriminator , TRAIN_RATIO=1, N_ITER=40001, BATCHLEN=128,
         WDTH_G=0, DPTH_G=0, WDTH_D=0, DPTH_D=0,
-        PRIOR_N=1, PRIOR_STD=1., frame=1000, is_notebook=True, batchlen_plot=5):
+        PRIOR_N=1, PRIOR_STD=1., frame=1000, is_notebook=True, batchlen_plot=5,
+        lr_G=1e-3, betas_G=(0.5, 0.9), lr_D=1e-3, betas_D=(0.5, 0.9)):
     """
     serie: Input Financial Time Serie
     TRAIN_RATIO : int, number of times to train the discriminator between two generator steps
@@ -82,9 +34,9 @@ def GAN(serie, window, TRAIN_RATIO=1, N_ITER=40001, BATCHLEN=128,
     else:
         from tqdm import tqdm
     G = Generator(window, WDTH=WDTH_G, DPTH=DPTH_G, PRIOR_N=PRIOR_N, PRIOR_STD=PRIOR_STD)
-    solver_G = torch.optim.Adam(G.parameters(), lr=1e-3, betas=(0.5, 0.9))
+    solver_G = torch.optim.Adam(G.parameters(), lr=lr_G, betas=betas_G)
     D = Discriminator(window, WDTH=WDTH_D, DPTH=DPTH_D)
-    solver_D = torch.optim.Adam(D.parameters(), lr=1e-4, betas=(0.5, 0.9))
+    solver_D = torch.optim.Adam(D.parameters(), lr=lr_D, betas=betas_D)
 
     for i in tqdm(range(N_ITER)):
         # train the discriminator
@@ -113,16 +65,3 @@ def GAN(serie, window, TRAIN_RATIO=1, N_ITER=40001, BATCHLEN=128,
             fake_batch = G.generate(batchlen_plot).detach()
             plt.plot(fake_batch.numpy().T)
             plt.show()
-
-
-if __name__ == '__main__':
-    # VIX = get_data('VIX.csv', array=False)
-    # VIX.plot()
-    # plt.show()
-
-    VIX = get_data('VIX.csv')
-    # X = generate_batch(VIX, 100, 10)
-    # plt.plot(X.numpy().T)
-    # plt.show()
-    GAN(VIX, 125, TRAIN_RATIO=1, N_ITER=4001, BATCHLEN=128,
-        WDTH_G=8, DPTH_G=3, WDTH_D=8, DPTH_D=3, PRIOR_N=5, PRIOR_STD=1., frame=100, is_notebook=False)
