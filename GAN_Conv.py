@@ -32,8 +32,6 @@ class Generator(nn.Module):
         z = F.relu(self.conv5(z))
         z = self.conv6(z)
         
-        #x = F.relu(self.fc2(x))
-        #x = self.fc3(x)
         return self.bn(z.view(-1, self.window))
 
     def generate(self, batchlen):
@@ -61,6 +59,7 @@ class Discriminator(nn.Module):
 
     def __call__(self, z):
         
+
         z = z.view(z.size()[0], 1, z.size()[-1])
         z = F.relu(self.conv1(z))
         z = F.relu(self.conv2(z))
