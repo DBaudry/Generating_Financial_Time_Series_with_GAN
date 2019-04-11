@@ -2,38 +2,49 @@ from GAN import *
 
     
 class Generator(nn.Module):
-    def __init__(self, window, PRIOR_N=10, PRIOR_STD=1.):
+    def __init__(self, window=60, PRIOR_N=10, PRIOR_STD=1., DPTH = 0,WDTH =100):
         super().__init__()
         self.PRIOR_N = PRIOR_N
         self.PRIOR_STD = PRIOR_STD
         self.window = window
-        self.conv1 = nn.Conv1d(in_channels = 1 , out_channels = 4,
-                               kernel_size = 3, padding=1)
-        self.conv2 =  nn.Conv1d(in_channels = 4 , out_channels = 16,
-                                kernel_size = 3, padding=1)
-        self.conv3 =  nn.Conv1d(in_channels = 16, out_channels = 30,
-                                kernel_size = 3, padding=1)
-        self.conv4 =  nn.Conv1d(in_channels = 30 , out_channels = self.window,
-                                kernel_size = 3, padding=1)
+        self.fc1 = nn.Linear(PRIOR_N , WDTH)
+        
+        self.hidden_layers = []
+        for _ in range(DPTH):
+            self.hidden_layers.append(nn.Linear(WDTH, WDTH))
+        self.hidden_layers = nn.ModuleList(self.hidden_layers)
+        
+        self.fc2 = nn.Linear(WDTH, window)
+        
+      
         #In_channels de conv6 doit être le nombre sources de random
-        self.conv5 =  nn.Conv1d(in_channels = self.PRIOR_N , out_channels = 5,
+        self.conv1 =  nn.Conv1d(in_channels = 1 , out_channels = 3,
                                 kernel_size = 3, padding=1)
-        self.conv6 =  nn.Conv1d(in_channels = 5 , out_channels = 1,
+        self.conv2 =  nn.Conv1d(in_channels = 3 , out_channels = 6,
                                 kernel_size = 3, padding=1)
-
+        self.conv3 =  nn.Conv1d(in_channels = 6 , out_channels = 3,
+                                kernel_size = 3, padding=1)
+        self.conv4 =  nn.Conv1d(in_channels = 3 , out_channels = 1,
+                                kernel_size = 3, padding=1)
 
     def __call__(self, z):
-        h = F.relu(self.conv1(z))
-        h = F.relu(self.conv2(h))
-        h = F.relu(self.conv3(h))
-        h = F.relu(self.conv4(h))
         
-        h = h.view(h.size()[0], self.PRIOR_N, self.window)
+      
+        h = F.relu(self.fc1(z))
+        for hidden_layer in self.hidden_layers:
+            h = F.relu(hidden_layer(h))
+        h = self.fc2(z)
         
-        h = F.relu(self.conv5(h))
-        h = self.conv6(h)
-
-        return h.view(-1,self.window)
+        h = h.view(h.size()[0],1,h.size()[-1])
+        h = self.conv1(h)
+        h = self.conv2(h)
+        h = self.conv3(h)
+        h = self.conv4(h)
+        
+        h = h.view(h.size()[0], self.window)
+        
+    
+        return h
 
     def generate(self, batchlen):
         z = torch.normal(torch.zeros(batchlen,1 , self.PRIOR_N), self.PRIOR_STD)
