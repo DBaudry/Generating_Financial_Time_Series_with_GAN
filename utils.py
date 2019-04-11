@@ -9,7 +9,7 @@ def get_data(name, array=True):
     df.iloc[:, 0] = df.iloc[:, 0].astype('float')
     r = np.log(df).diff()[1:]
     dt = [(df.index[t+1]-df.index[t]).days for t in range(r.shape[0])]
-    r = 365./np.array(dt) * r.iloc[:, 0]
+    r = 1/np.array(dt) * r.iloc[:, 0]
     if array:
         return np.array(r)
     return r
