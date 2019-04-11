@@ -49,16 +49,17 @@ if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
         'window': 250,
-        'frame': 100,
+        'frame': 10,
+        'frame_plot': 200,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
         'Discriminator': Discriminator
     }
     training_param = {
-        'N_ITER': 2001,
-        'TRAIN_RATIO': 5,
-        'BATCHLEN': 30,
+        'N_ITER': 11,
+        'TRAIN_RATIO': 20,
+        'BATCHLEN': 100,
         # Depth and Withdraw of Hidden Layers
         'generator_args': {
         # Random Noise used by the Generator
@@ -73,8 +74,19 @@ if __name__ == '__main__':
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
         'lr_D': 1e-4,
-        'betas_D': (0.5, 0.9)
+        'betas_D': (0.5, 0.9),
+        'save_model': False,
+        'save_name': 'Lin_G_'+str(int(np.random.uniform()*1e9))
     }
 
     param.update(training_param)
-    GAN(**param)
+
+    if param['save_model']:
+        pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
+    # GAN(**param)
+
+    name = 'Lin_G_267243796'
+    G, D, param_name = utils.load_models(name, Generator, Discriminator)
+    plt.plot(G.generate(30).detach().numpy().T)
+    plt.show()
+
