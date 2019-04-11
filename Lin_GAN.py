@@ -13,12 +13,14 @@ class Generator(nn.Module):
             self.hidden_layers.append(nn.Linear(WDTH, WDTH))
         self.hidden_layers = nn.ModuleList(self.hidden_layers)
         self.fc2 = nn.Linear(WDTH, window)
+        self.bn = nn.BatchNorm1d(WDTH)
+        self.bn_out = nn.BatchNorm1d(window)
 
     def __call__(self, z):
-        h = F.relu(self.fc1(z))
+        h = self.bn(F.relu(self.fc1(z)))
         for hidden_layer in self.hidden_layers:
-            h = F.relu(hidden_layer(h))
-        return self.fc2(h)
+            h = self.bn(F.relu(hidden_layer(h)))
+        return self.bn_out(self.fc2(h))
 
     def generate(self, batchlen):
         z = torch.normal(torch.zeros(batchlen, self.PRIOR_N), self.PRIOR_STD)
@@ -46,8 +48,8 @@ class Discriminator(nn.Module):
 if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
-        'window': 60,
-        'frame': 200,
+        'window': 250,
+        'frame': 100,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
@@ -55,15 +57,15 @@ if __name__ == '__main__':
     }
     training_param = {
         'N_ITER': 2001,
-        'TRAIN_RATIO': 10,
+        'TRAIN_RATIO': 5,
         'BATCHLEN': 30,
         # Depth and Withdraw of Hidden Layers
         'generator_args': {
         # Random Noise used by the Generator
         'PRIOR_N': 20,
-        'PRIOR_STD': 500.,
-        'WDTH': 100,
-        'DPTH': 1},
+        'PRIOR_STD': 15.,
+        'WDTH': 50,
+        'DPTH': 3},
         'discriminator_args': {
         'WDTH': 100,
         'DPTH': 3},
