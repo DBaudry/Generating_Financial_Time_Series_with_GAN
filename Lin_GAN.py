@@ -13,12 +13,14 @@ class Generator(nn.Module):
             self.hidden_layers.append(nn.Linear(WDTH, WDTH))
         self.hidden_layers = nn.ModuleList(self.hidden_layers)
         self.fc2 = nn.Linear(WDTH, window)
+        self.bn = nn.BatchNorm1d(WDTH)
+        self.bn_out = nn.BatchNorm1d(window)
 
     def __call__(self, z):
-        h = F.relu(self.fc1(z))
+        h = self.bn(F.relu(self.fc1(z)))
         for hidden_layer in self.hidden_layers:
-            h = F.relu(hidden_layer(h))
-        return self.fc2(h)
+            h = self.bn(F.relu(hidden_layer(h)))
+        return self.bn_out(self.fc2(h))
 
     def generate(self, batchlen):
         z = torch.normal(torch.zeros(batchlen, self.PRIOR_N), self.PRIOR_STD)
@@ -46,24 +48,25 @@ class Discriminator(nn.Module):
 if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
-        'window': 60,
-        'frame': 200,
+        'window': 250,
+        'frame': 10,
+        'frame_plot': 200,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
         'Discriminator': Discriminator
     }
     training_param = {
-        'N_ITER': 2001,
-        'TRAIN_RATIO': 10,
-        'BATCHLEN': 30,
+        'N_ITER': 11,
+        'TRAIN_RATIO': 20,
+        'BATCHLEN': 100,
         # Depth and Withdraw of Hidden Layers
         'generator_args': {
         # Random Noise used by the Generator
         'PRIOR_N': 20,
-        'PRIOR_STD': 500.,
-        'WDTH': 100,
-        'DPTH': 1},
+        'PRIOR_STD': 15.,
+        'WDTH': 50,
+        'DPTH': 3},
         'discriminator_args': {
         'WDTH': 100,
         'DPTH': 3},
@@ -71,8 +74,19 @@ if __name__ == '__main__':
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
         'lr_D': 1e-4,
-        'betas_D': (0.5, 0.9)
+        'betas_D': (0.5, 0.9),
+        'save_model': False,
+        'save_name': 'Lin_G_'+str(int(np.random.uniform()*1e9))
     }
 
     param.update(training_param)
-    GAN(**param)
+
+    if param['save_model']:
+        pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
+    # GAN(**param)
+
+    name = 'Lin_G_267243796'
+    G, D, param_name = utils.load_models(name, Generator, Discriminator)
+    plt.plot(G.generate(30).detach().numpy().T)
+    plt.show()
+

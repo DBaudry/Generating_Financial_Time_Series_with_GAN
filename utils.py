@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn.functional as F
+import pickle
 
 
 def get_data(name, array=True):
@@ -9,7 +10,7 @@ def get_data(name, array=True):
     df.iloc[:, 0] = df.iloc[:, 0].astype('float')
     r = np.log(df).diff()[1:]
     dt = [(df.index[t+1]-df.index[t]).days for t in range(r.shape[0])]
-    r = 365./np.array(dt) * r.iloc[:, 0]
+    r = 1/np.array(dt) * r.iloc[:, 0]
     if array:
         return np.array(r)
     return r
@@ -32,3 +33,12 @@ def softplus_loss(h, sgn):
 
 def negative_cross_entropy(h, target):
     return torch.mean(torch.sum(-F.cross_entropy(h, target)))
+
+
+def load_models(name, Generator, Discriminator):
+    param = pickle.load(open('Parameters/'+name+'.pk', 'rb'))
+    G = Generator(param['window'], **param['generator_args'])
+    G.load_state_dict(torch.load('Generator/'+name+'.pth'))
+    D = Discriminator(param['window'], **param['discriminator_args'])
+    D.load_state_dict(torch.load('Discriminator/'+name+'.pth'))
+    return G, D, param
