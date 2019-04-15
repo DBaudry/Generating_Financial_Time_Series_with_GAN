@@ -9,6 +9,7 @@ class Generator(nn.Module):
         self.PRIOR_STD = PRIOR_STD
         self.fc1 = nn.Linear(PRIOR_N, WDTH)
         self.hidden_layers = []
+        self.window = window
         for _ in range(DPTH):
             self.hidden_layers.append(nn.Linear(WDTH, WDTH))
         self.hidden_layers = nn.ModuleList(self.hidden_layers)
@@ -94,13 +95,13 @@ if __name__ == '__main__':
         # Depth and Withdraw of Hidden Layers
         'generator_args': {
         # Random Noise used by the Generator
-        'PRIOR_N': 10,
+        'PRIOR_N': 50,
         'PRIOR_STD': 10.,
-        'WDTH': 500,
-        'DPTH': 10},
+        'WDTH': 1000,
+        'DPTH': 30},
         'discriminator_args': {
         'WDTH': 100,
-        'DPTH': 3},
+        'DPTH': 5},
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
@@ -114,9 +115,9 @@ if __name__ == '__main__':
     param.update(training_param)
     if param['save_model']:
         pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
-    # GAN(**param)
+    GAN(**param)
 
-    random_xp(2000)
+    # random_xp(2000)
     # name = 'Lin_G_735900290'
     # G, D, param_name = utils.load_models(name, Generator, Discriminator)
     # print(param)
