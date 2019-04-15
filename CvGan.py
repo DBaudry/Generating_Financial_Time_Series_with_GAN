@@ -1,5 +1,19 @@
 from GAN import *
+from torch.nn.functional import interpolate
 
+
+class Interpolate(nn.Module):
+    def __init__(self, size):
+        super(Interpolate, self).__init__()
+        self.interp = nn.functional.interpolate
+        self.size = size
+        #self.mode = mode
+        
+    def forward(self, x):
+        x = self.interp(x, size=self.size)
+        return x
+
+Upsample = Interpolate
 
 class Generator(nn.Module):
     #Deconv block : conv1d, reakyrelu upslamping
@@ -15,13 +29,13 @@ class Generator(nn.Module):
         self.conv1 = nn.Conv1d(1, 32, kernel_size = self.kernel_size, padding = self.padding)
         
         self.bn2 = nn.BatchNorm1d(32)
-        self.up1 = nn.Upsample(size=30)
+        self.up1 = Upsample(size=30)
         self.conv2 = nn.Conv1d(32, 32, kernel_size = self.kernel_size, padding = self.padding)
         self.bn3 = nn.BatchNorm1d(32)
-        self.up2 = nn.Upsample(size = 60)
+        self.up2 = Upsample(size = 60)
         self.conv3 = nn.Conv1d(32, 32, kernel_size = self.kernel_size, padding = self.padding)
         self.bn4 = nn.BatchNorm1d(32)
-        self.up3 = nn.Upsample(size = 120)
+        self.up3 = Upsample(size = 120)
         self.bn5 = nn.BatchNorm1d(120)
         
         self.conv4 = nn.Conv1d(32, 1, kernel_size = 1)
