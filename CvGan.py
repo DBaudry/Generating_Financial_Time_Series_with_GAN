@@ -17,7 +17,7 @@ Upsample = Interpolate
 
 class Generator(nn.Module):
     #Deconv block : conv1d, reakyrelu upslamping
-    def __init__(self, kernel_size = 5, PRIOR_N = 2, PRIOR_STD=10, window = 60 ):
+    def __init__(self, window = 60, kernel_size = 5, PRIOR_N = 2, PRIOR_STD=10):
         super().__init__()
         self.window = window
         self.PRIOR_N = PRIOR_N
@@ -101,7 +101,7 @@ if __name__=='__main__':
     param = {
         'serie': get_data('VIX.csv'),
         'window': 60,
-        'frame': 1000,
+        'frame': 10,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
@@ -116,19 +116,27 @@ if __name__=='__main__':
         # Random Noise used by the Generator
         'PRIOR_N': 20,
         'PRIOR_STD': 500.,
-        'WDTH': 100,
-        'DPTH': 1},
-        'discriminator_args': {
-        'WDTH': 100,
-        'DPTH': 3},
+        'kernel_size': 5},
+        #'WDTH': 1000,
+        #'DPTH': 5},
+        'discriminator_args': {},
+        #'WDTH': 100,
+        #'DPTH': 3},
 
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
         'lr_D': 1e-4,
-        'betas_D': (0.5, 0.9)
+        'betas_D': (0.5, 0.9),
+        'plot': False,
+        'frame_plot': 100,
+        'time_max': 1800,
+        'save_model': True,
+        'save_name': 'CG2_'+str(int(np.random.uniform()*1e9))
     }
-
+    param.update(training_param)
+    if param['save_model']:
+        pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
     param.update(training_param)
     GAN(**param)
 

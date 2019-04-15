@@ -108,19 +108,19 @@ if __name__ == '__main__':
         'lr_D': 1e-4,
         'betas_D': (0.5, 0.9),
         'time_max': 600,
-        'save_model': True,
+        'save_model': False,
         'save_name': 'Lin_G_'+str(int(np.random.uniform()*1e9)),
         'plot': False
     }
     param.update(training_param)
     if param['save_model']:
         pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
-    GAN(**param)
+    # GAN(**param)
 
     # random_xp(2000)
-    # name = 'Lin_G_735900290'
-    # G, D, param_name = utils.load_models(name, Generator, Discriminator)
-    # print(param)
-    # plt.plot(G.generate(30).detach().numpy().T)
-    # plt.show()
+    name = 'Lin_G_711663071'
+    G, D, param_name = utils.load_models(name, Generator, Discriminator)
+    print(param)
+    plt.plot(G.generate(30).detach().numpy().T)
+    plt.show()
 
