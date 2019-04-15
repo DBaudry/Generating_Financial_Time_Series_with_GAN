@@ -10,36 +10,29 @@ class Generator(nn.Module):
         self.PRIOR_STD = PRIOR_STD
         self.nlayers = nlayers
         self.hidden_size = hidden_size
-        # self.rnn = nn.LSTM(PRIOR_N, window, nlayers)
-        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers)
-        self.bn = nn.BatchNorm1d(window)
+        self.fc_in = nn.Linear(PRIOR_N, window)
+        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers, batch_first=True)
         self.fc_out = nn.Linear(hidden_size, 1)
 
-    def __call__(self, batchlen, input, hx, cx):
-        output, (hx, cx) = self.rnn(input, (hx, cx))
+    def __call__(self, batchlen, input):
+        output, (hx, cx) = self.rnn(input)
         output = output.transpose(0, 1)
         return self.fc_out(output)[:, :, 0]
 
     def generate(self, batchlen):
-        # input = torch.randn(batchlen, 1, self.PRIOR_N)
-        # hx = torch.randn(self.nlayers, 1, self.window)
-        # cx = torch.randn(self.nlayers, 1, self.window)
-        input = torch.normal(torch.zeros(self.PRIOR_N, batchlen, 1), self.PRIOR_STD)
-        # hx = torch.normal(torch.zeros(self.nlayers, batchlen, self.hidden_size), self.PRIOR_STD)
-        # cx = torch.normal(torch.zeros(self.nlayers, batchlen, self.hidden_size), self.PRIOR_STD)
-        hx = torch.zeros(self.nlayers, batchlen, self.hidden_size)
-        cx = torch.zeros(self.nlayers, batchlen, self.hidden_size)
-        return self.__call__(batchlen, input, hx, cx)
+        input = torch.normal(torch.zeros(batchlen, self.PRIOR_N), self.PRIOR_STD)
+        input = self.fc_in(input).unsqueeze(2)
+        return self.__call__(batchlen, input)
 
 
 # Define the discriminator.
 class Discriminator(nn.Module):
-    def __init__(self, window, nlayers):
+    def __init__(self, window=0, nlayers=1, hidden_size=1):
         super().__init__()
         self.nlayers = nlayers
-        # self.rnn = nn.LSTM(window, window, nlayers)
-        self.rnn = nn.LSTM(input_size=1, hidden_size=20, num_layers=nlayers, batch_first=True)
-        self.fc_out = nn.Linear(20, 1)
+        self.hidden_size = hidden_size
+        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers, batch_first=True)
+        self.fc_out = nn.Linear(hidden_size, 1)
 
     def __call__(self, x):
         input = x.unsqueeze(2)
@@ -74,28 +67,29 @@ def random_xp(n_xp):
 if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
-        'window': 60,
-        'frame': 20,
-        'frame_plot': 20,
+        'window': 125,
+        'frame': 10,
+        'frame_plot': 100,
         'is_notebook': False,
         'batchlen_plot': 5,
         'Generator': Generator,
         'Discriminator': Discriminator,
-        'BATCHLEN': 30
+        'BATCHLEN': 50
     }
     training_param = {
-        'N_ITER': 20001,
+        'N_ITER': 1001,
         'TRAIN_RATIO': 5,
         # Random Noise used by the Generator
         'generator_args': {
-            'PRIOR_N': 60,
-            'PRIOR_STD': 10.,
+            'PRIOR_N': 300,
+            'PRIOR_STD': 100.,
             'nlayers': 1,
-            'hidden_size': 1
+            'hidden_size': 10
         },
         # Depth and Withdraw of Hidden Layers
         'discriminator_args': {
-        'nlayers': 1},
+        'nlayers': 1,
+        'hidden_size': 5},
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
@@ -105,7 +99,7 @@ if __name__ == '__main__':
         'argloss_real': torch.ones(param['BATCHLEN'], dtype=torch.int64),
         'argloss_fake': torch.zeros(param['BATCHLEN'], dtype=torch.int64),
         'argloss_gen': torch.ones(param['BATCHLEN'], dtype=torch.int64),
-        'save_model': True,
+        'save_model': False,
         'save_name': 'RGAN_'+str(int(np.random.uniform()*1e9)),
         'plot': True,
         'time_max': 1200

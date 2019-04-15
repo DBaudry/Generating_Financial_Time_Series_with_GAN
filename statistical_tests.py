@@ -1,5 +1,5 @@
 from GAN import *
-
+from sklearn import svm
 """
 Implement some unit test to check if a time serie verifies some facts that are generally true 
 for financial time series
@@ -87,10 +87,36 @@ def compute_all_stats(base_stats, serie, nlags=10, alpha=0.10, score_min=0.8, di
     return statn, autocor, square_autocor, res_moments
 
 
+def check_SVM(serie, generator, batchlen_train, batchlen_test):
+    real_batch = utils.generate_batch(serie, generator.window, batchlen_train).detach().numpy()
+    fake_batch = generator.generate(batchlen_train).detach().numpy()
+    label_real = np.ones(batchlen_train)
+    label_fake = np.zeros(batchlen_train)
+    X = np.concatenate([real_batch, fake_batch], axis=0)
+    y = np.concatenate([label_real, label_fake], axis=0).astype('int')
+    clf = svm.SVC()
+    clf.fit(X, y)
+    test_real = utils.generate_batch(serie, generator.window, batchlen_test).detach().numpy()
+    test_fake = generator.generate(batchlen_test).detach().numpy()
+    test_r_label = np.ones(batchlen_test)
+    test_f_label = np.zeros(batchlen_test)
+    test_X = np.concatenate([test_real, test_fake], axis=0).astype('int')
+    test_y = np.concatenate([test_r_label, test_f_label], axis=0)
+    return clf.score(test_X, test_y)
+
+
 if __name__ == '__main__':
     serie = get_data('VIX.csv')
-    batch = generate_batch(serie, 250, 2).numpy()
-    M0 = get_moments(batch[0])
-    compare_moments(M0, batch[1], display=True)
-    compute_all_stats(M0, serie,
-                      nlags=10, alpha=0.10, score_min=0.8, display=True)
+    # batch = generate_batch(serie, 250, 2).numpy()
+    # M0 = get_moments(batch[0])
+    # compare_moments(M0, batch[1], display=True)
+    # compute_all_stats(M0, serie,
+    #                   nlags=10, alpha=0.10, score_min=0.8, display=True)
+    from Lin_GAN import *
+    from Lin_GAN import Generator as LG
+    from Lin_GAN import Discriminator as LD
+    name = 'Lin_G_268169440'
+    G, D, param_name = utils.load_models(name, LG, LD)
+    print(check_SVM(serie, G, 500, 500))
+    plt.plot(G.generate(100).detach().numpy().T)
+    plt.show()
