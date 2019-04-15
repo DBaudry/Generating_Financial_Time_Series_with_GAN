@@ -124,7 +124,8 @@ if __name__ == '__main__':
     }
     param.update(training_param)
 
-    random_xp(2000)
+    # random_xp(2000)
     # if param['save_model']:
     #     pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
-    # GAN(**param)
+    pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
+    GAN(**param)

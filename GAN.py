@@ -21,7 +21,7 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
         frame=1000, frame_plot=1000, is_notebook=True, batchlen_plot=5,
         lr_G=1e-3, betas_G=(0.5, 0.9), lr_D=1e-3, betas_D=(0.5, 0.9),
         loss=utils.softplus_loss, argloss_real=-1, argloss_fake=1, argloss_gen=1,
-        save_model=False, save_name='model', tol=1e-6, plot=True, time_max=300):
+        save_model=False, save_name='model', tol=1e-6, plot=True, time_max=3000):
     """
     serie: Input Financial Time Serie
     TRAIN_RATIO : int, number of times to train the discriminator between two generator steps

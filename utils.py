@@ -46,6 +46,7 @@ def negative_cross_entropy(h, target):
 
 def KL_div(Gen, serie, length, batchlen):
     real_batch = generate_batch(serie, length, batchlen).detach().numpy().flatten()
+    real_batch = (real_batch-np.mean(serie))/np.std(serie)
     fake_batch = Gen.generate(batchlen).detach().numpy().flatten()
     r_kde = gaussian_kde(real_batch)
     f_kde = gaussian_kde(fake_batch)
@@ -72,12 +73,12 @@ def compare_plots(name, serie, batchlen, window, Gen, Disc):
     print(param_name)
     real_batch = (generate_batch(serie, window, batchlen)-np.mean(serie))/np.std(serie)
     fake_batch = G.generate(batchlen).detach()
-    random_batch = np.random.normal(size=(window, batchlen)) * np.std(serie)
+    random_batch = np.random.normal(size=(window, batchlen))
     fig, ax = plt.subplots(3, figsize=(20, 20), sharey=True)
     fig.suptitle('Real Batch vs Generated Batch and Random Batch')
-    ax[0].plot(real_batch.numpy().T)
+    ax[0].plot(real_batch.detach().numpy().T)
     ax[0].set_title('Batch from Real Serie')
-    ax[1].plot(fake_batch.numpy().T)
+    ax[1].plot(fake_batch.detach().numpy().T)
     ax[1].set_title('Generated Batch')
     ax[2].plot(random_batch)
     ax[2].set_title('Random Batch with the Standard deviation of the original serie')

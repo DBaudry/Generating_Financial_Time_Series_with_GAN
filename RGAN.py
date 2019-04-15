@@ -11,12 +11,12 @@ class Generator(nn.Module):
         self.nlayers = nlayers
         self.hidden_size = hidden_size
         self.fc_in = nn.Linear(PRIOR_N, window)
-        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers, batch_first=True)
+        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers,
+                           batch_first=True)
         self.fc_out = nn.Linear(hidden_size, 1)
 
     def __call__(self, batchlen, input):
         output, (hx, cx) = self.rnn(input)
-        output = output.transpose(0, 1)
         return self.fc_out(output)[:, :, 0]
 
     def generate(self, batchlen):
@@ -31,14 +31,17 @@ class Discriminator(nn.Module):
         super().__init__()
         self.nlayers = nlayers
         self.hidden_size = hidden_size
-        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers, batch_first=True)
-        self.fc_out = nn.Linear(hidden_size, 1)
+        self.rnn = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=nlayers,
+                            batch_first=True)
+        self.fc_hidden = nn.Linear(hidden_size, 1)
+        self.fc_out = nn.Linear(window, 1)
 
     def __call__(self, x):
         input = x.unsqueeze(2)
         output, (hx, cx) = self.rnn(input)
-        output = self.fc_out(output)[:, :, 0]
-        return torch.sigmoid(output)
+        output = self.fc_hidden(output)[:, :, 0]
+        return self.fc_out(output)
+        # return torch.sigmoid(output)
 
 
 def random_xp(n_xp):
@@ -67,7 +70,7 @@ def random_xp(n_xp):
 if __name__ == '__main__':
     param = {
         'serie': get_data('VIX.csv'),
-        'window': 125,
+        'window': 60,
         'frame': 10,
         'frame_plot': 100,
         'is_notebook': False,
@@ -82,33 +85,33 @@ if __name__ == '__main__':
         # Random Noise used by the Generator
         'generator_args': {
             'PRIOR_N': 300,
-            'PRIOR_STD': 100.,
+            'PRIOR_STD': 10,
             'nlayers': 1,
-            'hidden_size': 10
+            'hidden_size': 50
         },
         # Depth and Withdraw of Hidden Layers
         'discriminator_args': {
         'nlayers': 1,
-        'hidden_size': 5},
+        'hidden_size': 10},
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
         'lr_D': 1e-4,
         'betas_D': (0.5, 0.9),
-        'loss': utils.negative_cross_entropy,
-        'argloss_real': torch.ones(param['BATCHLEN'], dtype=torch.int64),
-        'argloss_fake': torch.zeros(param['BATCHLEN'], dtype=torch.int64),
-        'argloss_gen': torch.ones(param['BATCHLEN'], dtype=torch.int64),
-        'save_model': False,
+        # 'loss': utils.negative_cross_entropy,
+        # 'argloss_real': torch.ones(param['BATCHLEN'], dtype=torch.int64),
+        # 'argloss_fake': torch.zeros(param['BATCHLEN'], dtype=torch.int64),
+        # 'argloss_gen': torch.ones(param['BATCHLEN'], dtype=torch.int64),
+        'save_model': True,
         'save_name': 'RGAN_'+str(int(np.random.uniform()*1e9)),
-        'plot': True,
-        'time_max': 1200
+        'plot': False,
+        'time_max': 7200
     }
 
     param.update(training_param)
 
     # random_xp(100)
-    # if param['save_model']:
-    #     pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
+    if param['save_model']:
+        pickle.dump(param, open('Parameters/'+param['save_name']+'.pk', 'wb'))
     GAN(**param)
 
