@@ -94,16 +94,14 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.fc1(x), negative_slope=0.2)
         x = F.leaky_relu(self.fc2(x), negative_slope=0.2)
         x = F.leaky_relu(self.fc3(x), negative_slope=0.2)
-        
-    
         return x
 
- 
-if __name__ == '__main__':
+
+if __name__=='__main__':
     param = {
         'serie': get_data('VIX.csv'),
         'window': 60,
-        'frame': 200,
+        'frame': 1000,
         'is_notebook': False,
         'batchlen_plot': 10,
         'Generator': Generator,
@@ -123,6 +121,7 @@ if __name__ == '__main__':
         'discriminator_args': {
         'WDTH': 100,
         'DPTH': 3},
+
         # Adam Optimizer parameters for G/D
         'lr_G': 1e-4,
         'betas_G': (0.5, 0.9),
@@ -132,3 +131,4 @@ if __name__ == '__main__':
 
     param.update(training_param)
     GAN(**param)
+
