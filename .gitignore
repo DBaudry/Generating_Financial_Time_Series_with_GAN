@@ -1,0 +1,6 @@
+.DS_Store
+Helpers/.DS_Store
+Helpers/__pycache__/
+Architectures/__pycache__/
+Experiments/.ipynb_checkpoints/
+__pycache__/

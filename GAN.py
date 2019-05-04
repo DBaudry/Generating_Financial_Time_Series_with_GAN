@@ -1,19 +1,16 @@
 import numpy as np
 import torch
-import utils
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
+from Helpers import utils
+
+import matplotlib.pyplot as plt
+from Helpers.utils import generate_batch
+from copy import copy
+from time import time
+
 if torch.cuda.is_available():
     loadmap = {'cuda:0': 'gpu'}
 else:
     loadmap = {'cuda:0': 'cpu'}
-
-import matplotlib.pyplot as plt
-from utils import get_data, generate_batch
-import pickle
-from copy import copy
-from time import time
 
 
 def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_args,
@@ -38,16 +35,21 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
     t0 = time()
     diff_loss_mean = 1
     prev_disc_loss, prev_gen_loss = 1, 1
-    if is_notebook:
-        from tqdm import tqdm_notebook as tqdm
-    else:
-        from tqdm import tqdm
+
+    # if is_notebook:
+    #     from tqdm import tqdm_notebook as tqdm
+    # else:
+    #     from tqdm import tqdm
+
     G = Generator(window, **generator_args)
     solver_G = torch.optim.Adam(G.parameters(), lr=lr_G, betas=betas_G)
     D = Discriminator(window, **discriminator_args)
     solver_D = torch.optim.Adam(D.parameters(), lr=lr_D, betas=betas_D)
+
     m, sd = np.mean(serie), np.std(serie)
+
     for i in range(N_ITER): #tqdm(range(N_ITER)):
+
         # train the discriminator
         for _ in range(TRAIN_RATIO):
             D.zero_grad()
@@ -60,6 +62,7 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
             disc_loss = loss_real + loss_fake
             disc_loss.backward()
             solver_D.step()
+
         # train the generator
         G.zero_grad()
         fake_batch = G.generate(BATCHLEN)
@@ -68,19 +71,23 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
         gen_loss = - loss(h_fake, argloss_gen)
         gen_loss.backward()
         solver_G.step()
-        diff_loss_mean = 0.9 * diff_loss_mean + 0.1 * (torch.abs(disc_loss - prev_disc_loss)
-                         + torch.abs(gen_loss - prev_gen_loss))
+
+        diff_loss_mean = 0.9 * diff_loss_mean +\
+                         0.1 * (torch.abs(disc_loss - prev_disc_loss) + torch.abs(gen_loss - prev_gen_loss))
         prev_disc_loss, prev_gen_loss = copy(disc_loss), copy(gen_loss)
+
         if diff_loss_mean < tol or time()-t0 > time_max:
             if save_model:
                 torch.save(G.state_dict(), 'Generator/'+save_name+'.pth')
                 torch.save(D.state_dict(), 'Discriminator/'+save_name+'.pth')
             return None
+
         if i % frame == 0:
             print('step {}: discriminator: {:.3e}, generator: {:.3e}'.format(i, float(disc_loss), float(gen_loss)))
             if save_model:
                 torch.save(G.state_dict(), 'Generator/'+save_name+'.pth')
                 torch.save(D.state_dict(), 'Discriminator/'+save_name+'.pth')
+
         if plot and i % frame_plot == 0:
             # plot the result
             real_batch = (generate_batch(serie, window, batchlen_plot)-m)/sd
@@ -90,5 +97,6 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
             axs[0].plot(real_batch.numpy().T)
             axs[1].plot(fake_batch.numpy().T)
             plt.show()
+
     return G, D
 
