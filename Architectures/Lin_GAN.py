@@ -29,9 +29,9 @@ class Generator(nn.Module):
         self.bn_out = nn.BatchNorm1d(window)
 
     def __call__(self, z):
-        h = self.bn(F.relu(self.fc1(z)))
+        h = F.relu(self.bn(self.fc1(z)))
         for hidden_layer in self.hidden_layers:
-            h = self.bn(F.relu(hidden_layer(h)))
+            h = F.relu(self.bn(hidden_layer(h)))
         return self.fc2(h)
         # return self.bn_out(self.fc2(h))
 

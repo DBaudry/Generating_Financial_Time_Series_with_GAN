@@ -97,6 +97,5 @@ def GAN(serie, window, Generator, Discriminator , generator_args, discriminator_
             axs[0].plot(real_batch.numpy().T)
             axs[1].plot(fake_batch.numpy().T)
             plt.show()
-
     return G, D
 

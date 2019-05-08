@@ -40,11 +40,11 @@ def generate_batch(serie, length, BATCHLEN, add_noise=True, noise_lvl=0.2, proba
 
 
 def softplus_loss(h, sgn):
-    return torch.mean(torch.sum(F.softplus(h*sgn)))
+    return torch.mean(F.softplus(h*sgn))
 
 
 def negative_cross_entropy(h, target):
-    return torch.mean(torch.sum(F.cross_entropy(h, target)))
+    return torch.mean(F.cross_entropy(h, target))
 
 
 def KL_div(Gen, serie, length, batchlen):
@@ -90,7 +90,10 @@ def compare_plots(name, serie, batchlen, window, Gen, Disc):
 
 
 def load_models(name, Generator, Discriminator):
+    print(name)
     param = pickle.load(open('Parameters/'+name+'.pk', 'rb'))
+    if 'window' not in param.keys():
+        param['window'] = param['param_gen_batch']['T']
     G = Generator(param['window'], **param['generator_args'])
     G.load_state_dict(torch.load('Generator/'+name+'.pth'))
     D = Discriminator(param['window'], **param['discriminator_args'])
